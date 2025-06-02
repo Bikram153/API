@@ -1,3 +1,5 @@
 API/bin
 API/obj
 .vs/
+BlazorApp/bin
+BlazorApp/obj
