@@ -1,0 +1,108 @@
+﻿@page "/Client/Edit/{Id:int}"
+@using BlazorApp.Models;
+
+<div>
+    <h1 class="align-self-lg-center">New Client</h1>
+</div>
+@if(client==null)
+{
+    <p><em>Loading....</em></p>
+}
+else
+{
+    <div>
+        <h2>Client Id :@Id</h2>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col">
+            <input type="text" class="form-control" placeholder="First name" aria-label="First name" @bind="clientDto.FirstName">
+            <span class="text-danger">@Errors["FirstName"]?[0]</span>
+        </div>
+        <div class="col">
+            <input type="text" class="form-control" placeholder="Last name" aria-label="Last name" @bind="clientDto.LastName">
+            <span class="text-danger">@Errors["LastName"]?[0]</span>
+        </div>
+        <div class="col">
+            <input type="text" class="form-control" placeholder="Email" aria-label="Email" @bind="clientDto.Email">
+            <span class="text-danger">@Errors["Email"]?[0]</span>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col">
+            <input type="text" class="form-control" placeholder="Phone" aria-label="Phone" @bind="clientDto.Phone">
+            <span class="text-danger">@Errors["Phone"]?[0]</span>
+        </div>
+        <div class="col">
+            <input type="text" class="form-control" placeholder="Address" aria-label="Address" @bind="clientDto.Address">
+        </div>
+        <div class="col">
+            <select class="form-select" @bind="clientDto.Status">
+                <option selected>Status</option>
+                <option value="New">New</option>
+                <option value="Permanent">Permanent</option>
+                <option value="Lead">Lead</option>
+                <option value="Occasional">Occasional</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+            <span class="text-danger">@Errors["Status"]?[0]</span>
+        </div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-1">
+            <button type="button" class="btn btn-primary" @onclick="SaveClient">Submit</button>
+        </div>
+        <div class="col-2">
+            <a type="button" class="btn btn-danger" href="/Client">Cancel</a>
+        </div>
+    </div>
+}
+
+@using System.Text.Json.Nodes;
+@inject HttpClient http;
+@inject NavigationManager navManager;
+@code 
+{
+    [Parameter]
+    public int Id{ get; set; }
+    public Client? client = null;
+    public ClientDto clientDto { set; get; } = new();
+    public JsonNode Errors{ get; set; } = new JsonObject();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        client = await http.GetFromJsonAsync<Client>($"https://localhost:4000/api/Clients/{Id}");
+
+        clientDto.FirstName = client?.FirstName??"";
+        clientDto.LastName = client?.LastName ?? "";
+        clientDto.Address = client?.Address ?? "";
+        clientDto.Phone = client?.Phone ?? "";
+        clientDto.Email = client?.Email ?? "";
+        clientDto.Status = client?.Status ?? "";
+    }
+    private async Task SaveClient()
+    {
+        var response = await http.PutAsJsonAsync<ClientDto>($"https://localhost:4000/api/Clients/{Id}", clientDto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            //redirect to list of clients
+            navManager.NavigateTo("Client/");
+        }
+        else
+        {
+            var strResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Json Response: \n{strResponse}");
+
+            try
+            {
+                var jsonResponse = JsonNode.Parse(strResponse);
+                Errors = jsonResponse?["errors"] ?? new JsonObject();
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+    }
+}
